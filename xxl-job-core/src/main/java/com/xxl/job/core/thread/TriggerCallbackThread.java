@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by xuxueli on 16/7/22.
+ *
+ * 回调线程是 一个循环一直遍历发送队列里的数据
  */
 public class TriggerCallbackThread {
     private static Logger logger = LoggerFactory.getLogger(TriggerCallbackThread.class);

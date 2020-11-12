@@ -33,80 +33,76 @@ public class EmbedServer {
     private ExecutorBiz executorBiz;
     private Thread thread;
 
+    @SuppressWarnings("all")
     public void start(final String address, final int port, final String appname, final String accessToken) {
         executorBiz = new ExecutorBizImpl();
-        thread = new Thread(new Runnable() {
+        thread = new Thread(() -> {
 
-            @Override
-            public void run() {
+            // param
+            EventLoopGroup bossGroup = new NioEventLoopGroup();
+            EventLoopGroup workerGroup = new NioEventLoopGroup();
+            ThreadPoolExecutor bizThreadPool = new ThreadPoolExecutor(
+                    0,
+                    200,
+                    60L,
+                    TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<Runnable>(2000),
+                    new ThreadFactory() {
+                        @Override
+                        public Thread newThread(Runnable r) {
+                            return new Thread(r, "xxl-rpc, EmbedServer bizThreadPool-" + r.hashCode());
+                        }
+                    },
+                    new RejectedExecutionHandler() {
+                        @Override
+                        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                            throw new RuntimeException("xxl-job, EmbedServer bizThreadPool is EXHAUSTED!");
+                        }
+                    });
 
-                // param
-                EventLoopGroup bossGroup = new NioEventLoopGroup();
-                EventLoopGroup workerGroup = new NioEventLoopGroup();
-                ThreadPoolExecutor bizThreadPool = new ThreadPoolExecutor(
-                        0,
-                        200,
-                        60L,
-                        TimeUnit.SECONDS,
-                        new LinkedBlockingQueue<Runnable>(2000),
-                        new ThreadFactory() {
+
+            try {
+                // start server
+                ServerBootstrap bootstrap = new ServerBootstrap();
+                bootstrap.group(bossGroup, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(new ChannelInitializer<SocketChannel>() {
                             @Override
-                            public Thread newThread(Runnable r) {
-                                return new Thread(r, "xxl-rpc, EmbedServer bizThreadPool-" + r.hashCode());
+                            public void initChannel(SocketChannel channel) throws Exception {
+                                channel.pipeline()
+                                        .addLast(new IdleStateHandler(0, 0, 30 * 3, TimeUnit.SECONDS))  // beat 3N, close if idle
+                                        .addLast(new HttpServerCodec())
+                                        .addLast(new HttpObjectAggregator(5 * 1024 * 1024))  // merge request & reponse to FULL
+                                        .addLast(new EmbedHttpServerHandler(executorBiz, accessToken, bizThreadPool));
                             }
-                        },
-                        new RejectedExecutionHandler() {
-                            @Override
-                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                                throw new RuntimeException("xxl-job, EmbedServer bizThreadPool is EXHAUSTED!");
-                            }
-                        });
+                        })
+                        .childOption(ChannelOption.SO_KEEPALIVE, true);
 
+                // bind
+                ChannelFuture future = bootstrap.bind(port).sync();
 
-                try {
-                    // start server
-                    ServerBootstrap bootstrap = new ServerBootstrap();
-                    bootstrap.group(bossGroup, workerGroup)
-                            .channel(NioServerSocketChannel.class)
-                            .childHandler(new ChannelInitializer<SocketChannel>() {
-                                @Override
-                                public void initChannel(SocketChannel channel) throws Exception {
-                                    channel.pipeline()
-                                            .addLast(new IdleStateHandler(0, 0, 30 * 3, TimeUnit.SECONDS))  // beat 3N, close if idle
-                                            .addLast(new HttpServerCodec())
-                                            .addLast(new HttpObjectAggregator(5 * 1024 * 1024))  // merge request & reponse to FULL
-                                            .addLast(new EmbedHttpServerHandler(executorBiz, accessToken, bizThreadPool));
-                                }
-                            })
-                            .childOption(ChannelOption.SO_KEEPALIVE, true);
+                logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
 
-                    // bind
-                    ChannelFuture future = bootstrap.bind(port).sync();
+                // start registry
+                startRegistry(appname, address);
 
-                    logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
+                // wait util stop
+                future.channel().closeFuture().sync();
 
-                    // start registry
-                    startRegistry(appname, address);
-
-                    // wait util stop
-                    future.channel().closeFuture().sync();
-
-                } catch (InterruptedException e) {
-                    if (e instanceof InterruptedException) {
-                        logger.info(">>>>>>>>>>> xxl-job remoting server stop.");
-                    } else {
-                        logger.error(">>>>>>>>>>> xxl-job remoting server error.", e);
-                    }
-                } finally {
-                    // stop
-                    try {
-                        workerGroup.shutdownGracefully();
-                        bossGroup.shutdownGracefully();
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
-                    }
+            } catch (InterruptedException e) {
+                if (e instanceof InterruptedException) {
+                    logger.info(">>>>>>>>>>> xxl-job remoting server stop.");
+                } else {
+                    logger.error(">>>>>>>>>>> xxl-job remoting server error.", e);
                 }
-
+            } finally {
+                // stop
+                try {
+                    workerGroup.shutdownGracefully();
+                    bossGroup.shutdownGracefully();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
 
         });

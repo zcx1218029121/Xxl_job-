@@ -20,36 +20,27 @@ public class JobTriggerPoolHelper {
 
     // ---------------------- trigger pool ----------------------
 
-    // fast/slow thread pool
+    // 快慢线程池
     private ThreadPoolExecutor fastTriggerPool = null;
     private ThreadPoolExecutor slowTriggerPool = null;
 
     public void start(){
+        //快线程池
         fastTriggerPool = new ThreadPoolExecutor(
                 10,
                 XxlJobAdminConfig.getAdminConfig().getTriggerPoolFastMax(),
                 60L,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(1000),
-                new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, "xxl-job, admin JobTriggerPoolHelper-fastTriggerPool-" + r.hashCode());
-                    }
-                });
-
+                new LinkedBlockingQueue<>(1000),
+                r -> new Thread(r, "xxl-job, admin JobTriggerPoolHelper-fastTriggerPool-" + r.hashCode()));
+        //慢线程池
         slowTriggerPool = new ThreadPoolExecutor(
                 10,
                 XxlJobAdminConfig.getAdminConfig().getTriggerPoolSlowMax(),
                 60L,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(2000),
-                new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, "xxl-job, admin JobTriggerPoolHelper-slowTriggerPool-" + r.hashCode());
-                    }
-                });
+                new LinkedBlockingQueue<>(2000),
+                r -> new Thread(r, "xxl-job, admin JobTriggerPoolHelper-slowTriggerPool-" + r.hashCode()));
     }
 
 
@@ -61,8 +52,11 @@ public class JobTriggerPoolHelper {
     }
 
 
-    // job timeout count
-    private volatile long minTim = System.currentTimeMillis()/60000;     // ms > min
+    /**
+     *
+     * 每分钟 统计一次 任务运行耗时
+     */
+    private volatile long minTim = System.currentTimeMillis()/60000;
     private volatile ConcurrentMap<Integer, AtomicInteger> jobTimeoutCountMap = new ConcurrentHashMap<>();
 
 
@@ -79,43 +73,46 @@ public class JobTriggerPoolHelper {
         // choose thread pool
         ThreadPoolExecutor triggerPool_ = fastTriggerPool;
         AtomicInteger jobTimeoutCount = jobTimeoutCountMap.get(jobId);
-        if (jobTimeoutCount!=null && jobTimeoutCount.get() > 10) {      // job-timeout 10 times in 1 min
+        // job-timeout 10 times in 1 min
+        //如果该任务最近 一分钟内 运行超过500ms的次数大于10 即分配任务到慢线程池
+        if (jobTimeoutCount!=null && jobTimeoutCount.get() > 10) {
             triggerPool_ = slowTriggerPool;
         }
 
         // trigger
-        triggerPool_.execute(new Runnable() {
-            @Override
-            public void run() {
+        triggerPool_.execute(() -> {
 
-                long start = System.currentTimeMillis();
+            long start = System.currentTimeMillis();
 
-                try {
-                    // do trigger
-                    XxlJobTrigger.trigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam, addressList);
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                } finally {
+            try {
+                // do trigger
 
-                    // check timeout-count-map
-                    long minTim_now = System.currentTimeMillis()/60000;
-                    if (minTim != minTim_now) {
-                        minTim = minTim_now;
-                        jobTimeoutCountMap.clear();
+                // 触发任务
+                XxlJobTrigger.trigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam, addressList);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            } finally {
+
+                // check timeout-count-map
+                /// 比对分钟时间戳 如果分钟时间戳不一致 刷新超时记录map
+                long minTim_now = System.currentTimeMillis()/60000;
+                if (minTim != minTim_now) {
+                    minTim = minTim_now;
+                    jobTimeoutCountMap.clear();
+                }
+
+                // incr timeout-count-map
+                /// 如果运行时间超过500 则记录到 小本本上面
+                long cost = System.currentTimeMillis()-start;
+                if (cost > 500) {       // ob-timeout threshold 500ms
+                    AtomicInteger timeoutCount = jobTimeoutCountMap.putIfAbsent(jobId, new AtomicInteger(1));
+                    if (timeoutCount != null) {
+                        timeoutCount.incrementAndGet();
                     }
-
-                    // incr timeout-count-map
-                    long cost = System.currentTimeMillis()-start;
-                    if (cost > 500) {       // ob-timeout threshold 500ms
-                        AtomicInteger timeoutCount = jobTimeoutCountMap.putIfAbsent(jobId, new AtomicInteger(1));
-                        if (timeoutCount != null) {
-                            timeoutCount.incrementAndGet();
-                        }
-                    }
-
                 }
 
             }
+
         });
     }
 

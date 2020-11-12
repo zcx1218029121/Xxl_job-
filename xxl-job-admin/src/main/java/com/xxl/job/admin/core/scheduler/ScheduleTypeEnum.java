@@ -6,7 +6,10 @@ import com.xxl.job.admin.core.util.I18nUtil;
  * @author xuxueli 2020-10-29 21:11:23
  */
 public enum ScheduleTypeEnum {
-
+    /**
+     * 无间隔
+     */
+    @Deprecated
     NONE(I18nUtil.getString("schedule_type_none")),
 
     /**
@@ -17,6 +20,7 @@ public enum ScheduleTypeEnum {
     /**
      * schedule by fixed rate (in seconds)
      */
+    @Deprecated
     FIX_RATE(I18nUtil.getString("schedule_type_fix_rate")),
 
     /**

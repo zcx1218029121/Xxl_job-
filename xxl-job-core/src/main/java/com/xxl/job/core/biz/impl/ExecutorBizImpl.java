@@ -52,6 +52,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
         // valid：jobHandler + jobThread
         GlueTypeEnum glueTypeEnum = GlueTypeEnum.match(triggerParam.getGlueType());
+        //触发任务类型
         if (GlueTypeEnum.BEAN == glueTypeEnum) {
 
             // new jobhandler

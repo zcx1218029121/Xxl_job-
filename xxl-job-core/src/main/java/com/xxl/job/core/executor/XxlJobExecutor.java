@@ -64,17 +64,17 @@ public class XxlJobExecutor  {
     // ---------------------- start + stop ----------------------
     public void start() throws Exception {
 
-        // init logpath
+        // 初始化日志路径
         XxlJobFileAppender.initLogPath(logPath);
 
-        // init invoker, admin-client
+        // 初始化client列表
         initAdminBizList(adminAddresses, accessToken);
 
-
+        //初始日志文件清理线程
         // init JobLogFileCleanThread
         JobLogFileCleanThread.getInstance().start(logRetentionDays);
 
-        // init TriggerCallbackThread
+        // 启动回调线程
         TriggerCallbackThread.getInstance().start();
 
         // init executor-server
@@ -121,7 +121,7 @@ public class XxlJobExecutor  {
                     AdminBiz adminBiz = new AdminBizClient(address.trim(), accessToken);
 
                     if (adminBizList == null) {
-                        adminBizList = new ArrayList<AdminBiz>();
+                        adminBizList = new ArrayList<>();
                     }
                     adminBizList.add(adminBiz);
                 }

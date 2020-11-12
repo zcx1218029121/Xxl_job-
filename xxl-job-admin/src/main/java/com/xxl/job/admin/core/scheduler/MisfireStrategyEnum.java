@@ -9,11 +9,13 @@ public enum MisfireStrategyEnum {
 
     /**
      * do nothing
+     * 失败重试策略  什么都不做
      */
     DO_NOTHING(I18nUtil.getString("misfire_strategy_do_nothing")),
 
     /**
      * fire once now
+     * 失败重试策略  重试
      */
     FIRE_ONCE_NOW(I18nUtil.getString("misfire_strategy_fire_once_now"));
 

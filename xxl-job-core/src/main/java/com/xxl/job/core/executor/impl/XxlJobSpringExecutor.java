@@ -27,7 +27,6 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
     private static final Logger logger = LoggerFactory.getLogger(XxlJobSpringExecutor.class);
 
 
-    // start
     @Override
     public void afterSingletonsInstantiated() {
 
@@ -35,13 +34,17 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         /*initJobHandlerRepository(applicationContext);*/
 
         // init JobHandler Repository (for method)
+        // 通过SpringContext 读取到全部bean 扫描 bean方法是否有  @XxlJob("commandJobHandler") 并放入map
+        //注册 bea你认为
         initJobHandlerMethodRepository(applicationContext);
 
         // refresh GlueFactory
+        //更新胶水工厂的类型为 spring胶水工厂
         GlueFactory.refreshInstance(1);
 
         // super start
         try {
+            // 启动执行器
             super.start();
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -38,6 +38,10 @@ public class ExecutorBizClient implements ExecutorBiz {
         return XxlJobRemotingUtil.postBody(addressUrl+"idleBeat", accessToken, timeout, idleBeatParam, String.class);
     }
 
+    /**
+     *
+     *post http调用 任务执行器
+     */
     @Override
     public ReturnT<String> run(TriggerParam triggerParam) {
         return XxlJobRemotingUtil.postBody(addressUrl + "run", accessToken, timeout, triggerParam, String.class);
