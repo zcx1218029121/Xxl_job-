@@ -237,6 +237,8 @@ public class XxlJobHelper {
      *
      * @param handleMsg
      * @return
+     *
+     * 在这里为上下文对象赋值
      */
     public static boolean handleResult(int handleCode, String handleMsg) {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();

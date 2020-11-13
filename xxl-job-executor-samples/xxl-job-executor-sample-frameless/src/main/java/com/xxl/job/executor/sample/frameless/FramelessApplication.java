@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 无框架启动类 每一小时读取一次配置
  * @author xuxueli 2018-10-31 19:05:43
  */
 public class FramelessApplication {

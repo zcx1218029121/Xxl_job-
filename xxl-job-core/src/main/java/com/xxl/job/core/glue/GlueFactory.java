@@ -11,16 +11,26 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * glue factory, product class/object by name
- *
+ * 胶水工厂类
  * @author xuxueli 2016-1-2 20:02:27
  */
 public class GlueFactory {
 
 
+	/**
+	 * 懒汉式的单例模式
+	 * 可能是因为只在初始化的时候创建所以不考虑线程安全问题
+	 */
 	private static GlueFactory glueFactory = new GlueFactory();
+
 	public static GlueFactory getInstance(){
 		return glueFactory;
 	}
+
+	/**
+	 *  方法线程不安全 可能是因为只在初始化的时候创建所以不考虑线程安全问题
+	 * @param type 工厂单例
+	 */
 	public static void refreshInstance(int type){
 		if (type == 0) {
 			glueFactory = new GlueFactory();

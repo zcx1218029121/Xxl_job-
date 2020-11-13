@@ -5,6 +5,10 @@ import com.xxl.job.core.handler.IJobHandler;
 import java.lang.reflect.Method;
 
 /**
+ * 实际执行类
+ *
+ *封这一层的目的就是执行不同 类型的任务
+ * bean定时任务 和
  * @author xuxueli 2019-12-11 21:12:18
  */
 public class MethodJobHandler extends IJobHandler {
@@ -21,7 +25,9 @@ public class MethodJobHandler extends IJobHandler {
         this.initMethod = initMethod;
         this.destroyMethod = destroyMethod;
     }
-
+    /**
+     *实践执行参数
+     */
     @Override
     public void execute() throws Exception {
         method.invoke(target);

@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by xuxueli on 17/3/2.
+ *
+ * @author xuxueli
+ * @date 17/3/2
  */
 public class ExecutorRegistryThread {
     private static Logger logger = LoggerFactory.getLogger(ExecutorRegistryThread.class);
@@ -23,6 +25,7 @@ public class ExecutorRegistryThread {
 
     private Thread registryThread;
     private volatile boolean toStop = false;
+    @SuppressWarnings("all")
     public void start(final String appname, final String address){
 
         // valid
@@ -40,6 +43,7 @@ public class ExecutorRegistryThread {
             public void run() {
 
                 // registry
+                //执行器执行的时候会一直轮询发送注解请求给 注册中心当做心跳
                 while (!toStop) {
                     try {
                         RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
@@ -67,16 +71,18 @@ public class ExecutorRegistryThread {
 
                     try {
                         if (!toStop) {
+                            //心跳阻塞
                             TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
                         }
                     } catch (InterruptedException e) {
                         if (!toStop) {
+                            //心跳异常终止
                             logger.warn(">>>>>>>>>>> xxl-job, executor registry thread interrupted, error msg:{}", e.getMessage());
                         }
                     }
                 }
 
-                // registry remove
+                // registry remove 取消注册
                 try {
                     RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
                     for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {

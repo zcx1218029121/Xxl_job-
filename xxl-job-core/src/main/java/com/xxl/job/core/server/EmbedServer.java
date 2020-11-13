@@ -83,7 +83,7 @@ public class EmbedServer {
 
                 logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
 
-                // start registry
+                // 开始注册
                 startRegistry(appname, address);
 
                 // wait util stop
@@ -249,7 +249,7 @@ public class EmbedServer {
     // ---------------------- registry ----------------------
 
     public void startRegistry(final String appname, final String address) {
-        // start registry
+        // start registry 启动注册线程 轮询注册
         ExecutorRegistryThread.getInstance().start(appname, address);
     }
 

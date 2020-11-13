@@ -11,6 +11,9 @@ import java.util.List;
 
 /**
  * Created by xuxueli on 17/3/10.
+ * 故障转移策略
+ *
+ * 主要就是在路由前发送心跳 请求获取第一个正确响应心跳的执行器
  */
 public class ExecutorRouteFailover extends ExecutorRouter {
 
@@ -26,7 +29,7 @@ public class ExecutorRouteFailover extends ExecutorRouter {
                 beatResult = executorBiz.beat();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
-                beatResult = new ReturnT<String>(ReturnT.FAIL_CODE, ""+e );
+                beatResult = new ReturnT<>(ReturnT.FAIL_CODE, "" + e);
             }
             beatResultSB.append( (beatResultSB.length()>0)?"<br><br>":"")
                     .append(I18nUtil.getString("jobconf_beat") + "：")

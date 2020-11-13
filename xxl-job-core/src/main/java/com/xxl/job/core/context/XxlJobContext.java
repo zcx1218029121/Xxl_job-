@@ -3,6 +3,9 @@ package com.xxl.job.core.context;
 /**
  * xxl-job context
  *
+ * 执行任务的上线文
+ * 保存任务执行是否成功 和日志文件的id的 一堆变量
+ *
  * @author xuxueli 2020-05-21
  * [Dear hj]
  */
@@ -67,8 +70,8 @@ public class XxlJobContext {
         this.jobLogFileName = jobLogFileName;
         this.shardIndex = shardIndex;
         this.shardTotal = shardTotal;
-
-        this.handleCode = HANDLE_COCE_SUCCESS;  // default success
+        // default success
+        this.handleCode = HANDLE_COCE_SUCCESS;
     }
 
     public long getJobId() {
